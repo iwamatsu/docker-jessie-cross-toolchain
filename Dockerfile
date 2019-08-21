@@ -53,3 +53,25 @@ RUN TARGET_LIST="armhf" HOST_LIST="amd64" cross-gcc-gensource 4.9 && cd cross-gc
 # Build cross gcc for i386
 RUN TARGET_LIST="i386" HOST_LIST="amd64" cross-gcc-gensource 4.9 && cd cross-gcc-packages-amd64/cross-gcc-4.9-i386/ && \
     dpkg-buildpackage -B && cp ../*.deb ../../.
+
+# Remove source
+RUN rm -rf cross-gcc-packages-amd64
+
+# Build env
+FROM debian:jessie as buildenv
+
+# copy binutils package from container of building binutils
+RUN mkdir -p /opt/debian/cross
+WORKDIR /opt/debian/cross
+COPY --from=gcc /opt/debian/cross/ /opt/debian/cross/
+
+# add atchitecture
+RUN dpkg --add-architecture armhf && dpkg --add-architecture i386 && apt-get update
+
+# install packages
+RUN dpkg -i binutils-arm-linux-gnueabihf_2.25-5+deb8u1_amd64.deb || apt-get install -f -y --no-install-recommends
+RUN dpkg -i binutils-i586-linux-gnu_2.25-5+deb8u1_amd64.deb || apt-get install -f -y --no-install-recommends
+RUN dpkg -i gcc-4.9-arm-linux-gnueabihf_4.9.2-10+deb8u2_amd64.deb cpp-4.9-arm-linux-gnueabihf_4.9.2-10+deb8u2_amd64.deb \
+            g++-4.9-arm-linux-gnueabihf_4.9.2-10+deb8u2_amd64.deb || apt-get install -f -y --no-install-recommends
+RUN dpkg -i gcc-4.9-i586-linux-gnu_4.9.2-10+deb8u2_amd64.deb cpp-4.9-i586-linux-gnu_4.9.2-10+deb8u2_amd64.deb \
+            g++-4.9-i586-linux-gnu_4.9.2-10+deb8u2_amd64.deb || apt-get install -f -y --no-install-recommends
